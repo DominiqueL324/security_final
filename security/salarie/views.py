@@ -22,7 +22,7 @@ from rest_framework.pagination import LimitOffsetPagination
 
 class SalarieApi(APIView):
 
-    authentication_classes = [TokenAuthentication]
+    #authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     pagination_class = LimitOffsetPagination
     queryset = Salarie.objects.all()
@@ -88,7 +88,7 @@ class SalarieApi(APIView):
 
 class SalarieApiDetails(APIView):
 
-    authentication_classes = [TokenAuthentication]
+    #authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     
     def get(self,request,id):

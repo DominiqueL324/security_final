@@ -21,8 +21,8 @@ from rest_framework.pagination import LimitOffsetPagination
 
 class AgentApi(APIView):
 
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
+    #authentication_classes = [TokenAuthentication]
+    permission_classes = (IsAuthenticated,)
     pagination_class = LimitOffsetPagination
     queryset = Agent.objects.all()
     serializer_class = AgentSerializer
@@ -84,8 +84,8 @@ class AgentApi(APIView):
 
 class AgentApiDetails(APIView):
 
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
+    #authentication_classes = [TokenAuthentication]
+    permission_classes = (IsAuthenticated,)
 
     def get(self,request,id):
         admin = Agent.objects.filter(pk=id)

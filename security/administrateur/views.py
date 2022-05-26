@@ -23,8 +23,8 @@ from security.settings import *
 
 class AdministrateurApi(APIView):
 
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
+    #authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated,]
     pagination_class = LimitOffsetPagination
     queryset = Administrateur.objects.all()
     serializer_class = AdministrateurSerializer
@@ -84,7 +84,7 @@ class AdministrateurApi(APIView):
 
 class AdministrateurApiDetails(APIView):
 
-    authentication_classes = [TokenAuthentication]
+    #authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     
     def get(self,request,id):

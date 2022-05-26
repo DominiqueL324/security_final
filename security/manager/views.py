@@ -22,18 +22,21 @@ from django.contrib.auth.models import User, Group
 from datetime import date, datetime,time,timedelta
 from django.http import JsonResponse
 from salarie.views import checkifExist,checkifExistEmail,checkUsername
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 # Create your views here.
 class RoleManager(APIView):
 
-    authentication_classes = [TokenAuthentication]
+    #authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self,request):
-        user = Token.objects.filter(key=request.GET.get('token'))
+        #user = Token.objects.filter(key=request.GET.get('token'))
+        odj_token = AccessToken(request.GET.get('token')) 
+        user = User.objects.filter(pk=int(odj_token['user_id']))
 
         if user.exists():
-            us = User.objects.filter(pk=user.first().user_id).first()
+            us = User.objects.filter(pk=user.first().id).first()
             if us.groups.filter(name="Administrateur").exists():
                 boy = Administrateur.objects.filter(user=us)
                 serializer = AdministrateurSerializer(boy,many=True)
@@ -57,19 +60,22 @@ class RoleManager(APIView):
         return Response({'status':'none'}, status=200)
     
 class Logout(APIView):
+    permission_classes = (IsAuthenticated,)
 
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-    
-    def get(self, request, format=None):
-        # simply delete the token to force a login
-        Token.objects.filter(key=request.GET.get('token',None)).delete()
-        #request.user.auth_token.delete()
-        return JsonResponse({"status":"done"},status=200)
+    def get(self, request):
+        #try:
+        refresh_token = request.GET.get('token',None)
+        token = RefreshToken(refresh_token)
+        token.blacklist()
+        #odj_token = AccessToken(request.GET.get('token')) 
+
+        return JsonResponse({"status":"done"},status=205)
+        #except Exception as e:
+            #return JsonResponse({"status":"bad request"},status=400)
 
 class checkUsernameApi(APIView):
 
-    authentication_classes = [TokenAuthentication]
+    #authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self,request):

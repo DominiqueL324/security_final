@@ -26,7 +26,7 @@ from rest_framework.pagination import LimitOffsetPagination
 
 class ClientApi(APIView):
 
-    authentication_classes = [TokenAuthentication]
+    #authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     pagination_class = LimitOffsetPagination
     queryset = Client.objects.all()
@@ -153,7 +153,7 @@ class ClientApi(APIView):
 class ClientApiDetails(APIView):
 
     #authentication_classes = [TokenAuthentication]
-    #permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     
     def get(self,request,id):
         client = Client.objects.filter(pk=id)
