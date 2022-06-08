@@ -14,7 +14,7 @@ from django.contrib.auth.models import User, Group
 from datetime import date, datetime,time,timedelta
 from rest_framework.response import Response
 from salarie.views import checkifExist,checkifExistEmail,checkUsername
-from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.pagination import LimitOffsetPagination,PageNumberPagination
 
 
 # Create your views here.
@@ -23,18 +23,19 @@ class AgentApi(APIView):
 
     #authentication_classes = [TokenAuthentication]
     permission_classes = (IsAuthenticated,)
-    pagination_class = LimitOffsetPagination
+    pagination_class = PageNumberPagination
     queryset = Agent.objects.all()
-    serializer_class = AgentSerializer
+    paginator = pagination_class()
+    #serializer_class = AgentSerializer
     
     def get(self,request):
-        page = self.paginate_queryset(self.queryset)
-        if page is not None:
+        #page = self.paginate_queryset(self.queryset)
+        """if page is not None:
             serializer = self.serializer_class(page, many=True)
-            return self.get_paginated_response(serializer.data)
-        #admin = 
-        #serializer = (admin,many=True)
-        #return Response(serializer.data,status=status.HTTP_200_OK)
+            return self.get_paginated_response(serializer.data)"""
+        agent = self.paginator.paginate_queryset(self.queryset,request,view=self)
+        serializer = AgentSerializer(agent,many=True)
+        return self.paginator.get_paginated_response(serializer.data)
 
     def post(self,request):
         data = request.data
@@ -64,7 +65,7 @@ class AgentApi(APIView):
             serializer = AgentSerializer(admin,many=True)
             return Response(serializer.data,status= status.HTTP_201_CREATED)
     
-    @property
+    """@property
     def paginator(self):
         if not hasattr(self, '_paginator'):
             if self.pagination_class is None:
@@ -80,7 +81,7 @@ class AgentApi(APIView):
 
     def get_paginated_response(self,data):
         assert self.paginator is not None
-        return self.paginator.get_paginated_response(data)
+        return self.paginator.get_paginated_response(data)"""
 
 class AgentApiDetails(APIView):
 

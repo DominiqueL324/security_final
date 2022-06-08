@@ -4,7 +4,7 @@ from .models import Administrateur
 from .serializer import AdministrateurSerializer
 from rest_framework.views import APIView
 from rest_framework.authentication import  TokenAuthentication
-from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.pagination import LimitOffsetPagination,PageNumberPagination
 from rest_framework import generics
 from rest_framework import mixins 
 from rest_framework.authtoken.models import Token
@@ -25,17 +25,16 @@ class AdministrateurApi(APIView):
 
     #authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated,]
-    pagination_class = LimitOffsetPagination
-    queryset = Administrateur.objects.all()
-    serializer_class = AdministrateurSerializer
-
+    pagination_class = PageNumberPagination
+    paginator = pagination_class()
     def get(self,request): 
-        page = self.paginate_queryset(self.queryset)
-        if page is not None:
+        #page = self.paginate_queryset(self.queryset)
+        """if page is not None:
             serializer = self.serializer_class(page, many=True)
-            return self.get_paginated_response(serializer.data)
-        #serializer = AdministrateurSerializer(admin,many=True)
-        #return Response(serializer.data,status=status.HTTP_200_OK)
+            return self.get_paginated_response(serializer.data)"""
+        page = self.paginator.paginate_queryset(Administrateur.objects.all(), request, view=self)
+        serializer = AdministrateurSerializer(page,many=True)
+        return self.paginator.get_paginated_response(serializer.data)
 
     def post(self,request):
         data = request.data
@@ -64,7 +63,7 @@ class AdministrateurApi(APIView):
             admin = Administrateur.objects.filter(pk=admin.id)
             serializer = AdministrateurSerializer(admin,many=True)
             return Response(serializer.data,status= status.HTTP_201_CREATED)
-    @property
+    """@property
     def paginator(self):
         if not hasattr(self, '_paginator'):
             if self.pagination_class is None:
@@ -80,7 +79,7 @@ class AdministrateurApi(APIView):
 
     def get_paginated_response(self,data):
         assert self.paginator is not None
-        return self.paginator.get_paginated_response(data)
+        return self.paginator.get_paginated_response(data)"""
 
 class AdministrateurApiDetails(APIView):
 

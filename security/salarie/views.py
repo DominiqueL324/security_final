@@ -15,7 +15,7 @@ from django.db import transaction, IntegrityError
 from django.contrib.auth.models import User, Group
 from datetime import date, datetime,time,timedelta
 from rest_framework.response import Response
-from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.pagination import LimitOffsetPagination,PageNumberPagination
 
 
 # Create your views here.
@@ -24,19 +24,20 @@ class SalarieApi(APIView):
 
     #authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
-    pagination_class = LimitOffsetPagination
+    pagination_class = PageNumberPagination
     queryset = Salarie.objects.all()
     serializer_class = SalarieSerializer
+    paginator = pagination_class()
 
 
     def get(self,request):
-        page = self.paginate_queryset(self.queryset)
+        """page = self.paginate_queryset(self.queryset)
         if page is not None:
             serializer = self.serializer_class(page, many=True)
-            return self.get_paginated_response(serializer.data)
-        #salarie = Salarie.objects.all()
-        #serializer = SalarieSerializer(salarie,many=True)
-        #return Response(serializer.data,status=status.HTTP_200_OK)
+            return self.get_paginated_response(serializer.data)"""
+        salarie = self.paginator.paginate_queryset(self.queryset,request,view=self)
+        serializer = SalarieSerializer(salarie,many=True)
+        return self.paginator.get_paginated_response(serializer.data)
 
     def post(self,request):
         data = request.data
@@ -68,7 +69,7 @@ class SalarieApi(APIView):
             serializer = SalarieSerializer(salarie,many=True)
             return Response(serializer.data,status= status.HTTP_201_CREATED)
             
-    @property
+    """@property
     def paginator(self):
         if not hasattr(self, '_paginator'):
             if self.pagination_class is None:
@@ -84,7 +85,7 @@ class SalarieApi(APIView):
 
     def get_paginated_response(self,data):
         assert self.paginator is not None
-        return self.paginator.get_paginated_response(data)
+        return self.paginator.get_paginated_response(data)"""
 
 class SalarieApiDetails(APIView):
 

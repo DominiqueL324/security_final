@@ -23,6 +23,8 @@ from datetime import date, datetime,time,timedelta
 from django.http import JsonResponse
 from salarie.views import checkifExist,checkifExistEmail,checkUsername
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
+from .serializer import UserSerializer
+from rest_framework.pagination import LimitOffsetPagination,PageNumberPagination
 
 # Create your views here.
 class RoleManager(APIView):
@@ -107,3 +109,13 @@ class checkUsernameApi(APIView):
             return JsonResponse({"status":"good"})
 
         return JsonResponse({"status":"good"})
+
+class getAllUserApi(APIView):
+    permission_classes = [IsAuthenticated]
+    pagination_class = PageNumberPagination
+    paginator = pagination_class()
+    def get(self,request):
+        users = self.paginator.paginate_queryset(User.objects.filter(is_staff=False),request,view=self) 
+        serialized = UserSerializer(users,many=True)
+        return self.paginator.get_paginated_response(serialized.data)
+

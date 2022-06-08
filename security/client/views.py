@@ -19,7 +19,7 @@ from datetime import date, datetime,time,timedelta
 from rest_framework.response import Response
 from salarie.views import checkifExist,checkifExistEmail,checkUsername
 import datetime, random, string
-from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.pagination import LimitOffsetPagination,PageNumberPagination
 
 
 # Create your views here.
@@ -28,18 +28,19 @@ class ClientApi(APIView):
 
     #authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
-    pagination_class = LimitOffsetPagination
+    pagination_class = PageNumberPagination
     queryset = Client.objects.all()
-    serializer_class = ClientSerializer
+    paginator = pagination_class()
+    #serializer_class = ClientSerializer
 
     def get(self,request):
-        page = self.paginate_queryset(self.queryset)
-        if page is not None:
+        #page = self.paginate_queryset(self.queryset)
+        """if page is not None:
             serializer = self.serializer_class(page, many=True)
-            return self.get_paginated_response(serializer.data)
-        #client = Client.objects.all()
-        #serializer = ClientSerializer(client,many=True)
-        #return Response(serializer.data,status=status.HTTP_200_OK)
+            return self.get_paginated_response(serializer.data)"""
+        client = self.paginator.paginate_queryset(self.queryset,request,view=self)
+        serializer = ClientSerializer(client,many=True)
+        return self.paginator.get_paginated_response(serializer.data)
 
     def post(self,request):
         data = request.data
@@ -80,21 +81,21 @@ class ClientApi(APIView):
             user.groups.add(Group.objects.filter(name="Client").first().id)
             user.save()
 
-            comptable = Comptable.objects.create(
+            """comptable = Comptable.objects.create(
                 nom_complet = data['nom_complet_comptable'],
                 email_envoi_facture = data['email_envoi_facture'],
                 telephone = data['telephone_comptable'],
                 mobile = data['mobile_comptable']
-            )
+            )"""
 
-            service = ServiceGestion.objects.create(
+            """service = ServiceGestion.objects.create(
                 nom_complet = data['nom_complet_contact'],
                 email = data['email_service_gestion'],
                 telephone = data['telephone_service_gestion'],
                 mobile = data['mobile_service_gestion']
-            )
+            )"""
 
-            concession = Concession.objects.create(
+            """concession = Concession.objects.create(
                 agent_rattache = Agent.objects.filter(pk=int(data['agent_rattache'])).first(),
                 agence_secteur_rattachement = data['agence_secteur_rattachement'],
                 nom_concessionnaire = data['nom_concessionnaire'],
@@ -103,36 +104,36 @@ class ClientApi(APIView):
                 as_client = data['as_client'],
                 origine_client = data['origine_client'],
                 suivie_technique_client = data['suivie_technique_client']
-            )
+            )"""
 
             client = Client.objects.create(
                 user = user,
                 adresse = data['adresse'],
-                statut = data['statut_client'],
-                titre = data['titre'],
-                fonction = data['fonction'],
-                societe = data['societe'],
-                ref_societe = data['ref_societe'],
-                email_agence = data['email_agence'],
-                siret = data['siret'],
-                tva_intercommunautaire = data['tva_intercommunautaire'],
-                complement_adresse = data['complement_adresse'],
-                code_postal = data['code_postal'],
-                ville = data['ville'],
+                #statut = data['statut_client'],
+                #titre = data['titre'],
+                #fonction = data['fonction'],
+                #societe = data['societe'],
+                #ref_societe = data['ref_societe'],
+                #email_agence = data['email_agence'],
+                #siret = data['siret'],
+                #tva_intercommunautaire = data['tva_intercommunautaire'],
+                #complement_adresse = data['complement_adresse'],
+                #code_postal = data['code_postal'],
+                #ville = data['ville'],
                 telephone = data['telephone'],
-                mobile = data['mobile'],
-                telephone_agence = data['telephone_agence'],
+                #mobile = data['mobile'],
+                #telephone_agence = data['telephone_agence'],
                 code_client = code_client,
-                ref_comptable = comptable,
-                ref_service_gestion = service,
-                info_concession = concession  
+                #ref_comptable = comptable,
+                #ref_service_gestion = service,
+                #info_concession = concession  
             )
 
             client = Client.objects.filter(pk=client.id)
             serializer = ClientSerializer(client,many=True)
             return Response(serializer.data,status= status.HTTP_201_CREATED)
 
-    @property
+    """@property
     def paginator(self):
         if not hasattr(self, '_paginator'):
             if self.pagination_class is None:
@@ -148,7 +149,7 @@ class ClientApi(APIView):
 
     def get_paginated_response(self,data):
         assert self.paginator is not None
-        return self.paginator.get_paginated_response(data)
+        return self.paginator.get_paginated_response(data)"""
 
 class ClientApiDetails(APIView):
 
@@ -177,9 +178,9 @@ class ClientApiDetails(APIView):
 
             with transaction.atomic():
                 user = client.user
-                comptable = client.ref_comptable
-                service = client.ref_service_gestion
-                concession = client.info_concession
+                #comptable = client.ref_comptable
+                #service = client.ref_service_gestion
+                #concession = client.info_concession
 
                 user.first_name = data['prenom']
                 user.last_name = data['nom']
@@ -194,7 +195,32 @@ class ClientApiDetails(APIView):
                 user.groups.add(Group.objects.filter(name="Client").first().id)
                 user.save()
 
-                comptable.nom_complet = data['nom_complet_comptable']
+                comptable = Comptable.objects.create(
+                    nom_complet = data['nom_complet_comptable'],
+                    email_envoi_facture = data['email_envoi_facture'],
+                    telephone = data['telephone_comptable'],
+                    mobile = data['mobile_comptable']
+                )
+
+                service = ServiceGestion.objects.create(
+                    nom_complet = data['nom_complet_contact'],
+                    email = data['email_service_gestion'],
+                    telephone = data['telephone_service_gestion'],
+                    mobile = data['mobile_service_gestion']
+                )
+
+                concession = Concession.objects.create(
+                    agent_rattache = Agent.objects.filter(pk=int(data['agent_rattache'])).first(),
+                    agence_secteur_rattachement = data['agence_secteur_rattachement'],
+                    nom_concessionnaire = data['nom_concessionnaire'],
+                    numero_proposition_prestation = data['numero_proposition_prestation'],
+                    nom_complet = data['nom_concessionnaire'],
+                    as_client = data['as_client'],
+                    origine_client = data['origine_client'],
+                    suivie_technique_client = data['suivie_technique_client']
+                )
+
+                """comptable.nom_complet = data['nom_complet_comptable']
                 comptable.email_envoi_facture = data['email_envoi_facture']
                 comptable.telephone = data['telephone_comptable']
                 comptable.mobile = data['mobile_comptable']
@@ -214,7 +240,7 @@ class ClientApiDetails(APIView):
                 concession.as_client = data['as_client']
                 concession.origine_client = data['origine_client']
                 concession.suivie_technique_client = data['suivie_technique_client']
-                concession.save()
+                concession.save()"""
 
                 client.user = user
                 client.statut = data['statut_client']
