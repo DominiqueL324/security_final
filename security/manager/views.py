@@ -1,3 +1,5 @@
+import email
+from email.message import EmailMessage
 from unicodedata import name
 from django.shortcuts import render
 from rest_framework.response import Response
@@ -25,6 +27,7 @@ from salarie.views import checkifExist,checkifExistEmail,checkUsername
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from .serializer import UserSerializer
 from rest_framework.pagination import LimitOffsetPagination,PageNumberPagination
+from django.db.models import Q
 
 # Create your views here.
 class RoleManager(APIView):
@@ -38,7 +41,14 @@ class RoleManager(APIView):
         user = User.objects.filter(pk=int(odj_token['user_id']))
 
         if user.exists():
+            
             us = User.objects.filter(pk=user.first().id).first()
+            if not us.is_active:
+                refresh_token = request.GET.get('token',None)
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+                return Response({"status":" user not activated"},status=status.HTTP_403_FORBIDDEN)
+                 
             if us.groups.filter(name="Administrateur").exists():
                 boy = Administrateur.objects.filter(user=us)
                 serializer = AdministrateurSerializer(boy,many=True)
@@ -115,7 +125,28 @@ class getAllUserApi(APIView):
     pagination_class = PageNumberPagination
     paginator = pagination_class()
     def get(self,request):
+        if(request.GET.get("value",None) is not None):
+            val_ = request.GET.get("value",None)
+            #users = User.objects.filter(email=val_)
+            users = User.objects.filter(Q(first_name__icontains=val_)|Q(email__icontains=val_)|Q(last_name__icontains=val_))
+            serializer = UserSerializer(users,many=True)
+            return Response(serializer.data,status=status.HTTP_200_OK)
+
         users = self.paginator.paginate_queryset(User.objects.filter(is_staff=False),request,view=self) 
         serialized = UserSerializer(users,many=True)
         return self.paginator.get_paginated_response(serialized.data)
+
+class userStateAPI(APIView):
+
+    #permission_classes = [IsAuthenticated]
+
+    def get(self,request,id):
+        user = User.objects.filter(pk=int(id))
+        if user.exists():
+            user = user.first()
+            user.is_active = 0 if user.is_active==1  else 1
+            user.save()
+            return Response({"status":"done"},status=status.HTTP_200_OK)
+        return Response({"status":"not found"},status=status.HTTP_204_NO_CONTENT)
+
 

@@ -30,6 +30,10 @@ class AgentApi(APIView):
     
     def get(self,request):
         #page = self.paginate_queryset(self.queryset)
+        if(request.GET.get("paginated",None) is not None):
+            agent = Agent.objects.all()
+            serializer = AgentSerializer(agent,many=True)
+            return Response(serializer.data,status=status.HTTP_200_OK)
         """if page is not None:
             serializer = self.serializer_class(page, many=True)
             return self.get_paginated_response(serializer.data)"""
@@ -53,12 +57,14 @@ class AgentApi(APIView):
             user.email = data['email']
             user.username = data['login']
             user.set_password(data['mdp'])
+            user.is_active = True
             user.save()
             user.groups.add(Group.objects.filter(name="Agent").first().id)
             user.save()
             admin = Agent.objects.create(
                 user = user,
                 trigramme = data['trigramme'],
+                adresse = data['adresse'],
                 created_at = datetime.today()
             )
             admin = Agent.objects.filter(pk=admin.id)
@@ -113,12 +119,14 @@ class AgentApiDetails(APIView):
                 user.last_name = data['nom']
                 user.email = data['email']
                 user.username = data['login']
+                user.is_active = data['is_active']
                 if data['mdp'] is not None:
                     user.set_password(data['mdp'])
                 user.groups.add(Group.objects.filter(name="Agent").first().id)
                 user.save()
                 admin.updated_at = datetime.today()
                 admin.trigramme = data['trigramme']
+                admin.adresse = data['adresse']
                 admin.save()
                 admin = Agent.objects.filter(pk=id)
                 serializer= AgentSerializer(admin,many=True)
@@ -134,5 +142,6 @@ class AgentApiDetails(APIView):
             admin.delete()
             return Response({"status":"done"},status=status.HTTP_200_OK)
         return Response({"status":"none"},status=status.HTTP_204_NO_CONTENT)
+
 
 

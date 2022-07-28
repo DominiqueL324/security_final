@@ -29,6 +29,10 @@ class AdministrateurApi(APIView):
     paginator = pagination_class()
     def get(self,request): 
         #page = self.paginate_queryset(self.queryset)
+        if(request.GET.get("paginated",None) is not None):
+            admin = Administrateur.objects.all()
+            serializer = AdministrateurSerializer(admin,many=True)
+            return Response(serializer.data,status=status.HTTP_200_OK)
         """if page is not None:
             serializer = self.serializer_class(page, many=True)
             return self.get_paginated_response(serializer.data)"""
@@ -52,6 +56,7 @@ class AdministrateurApi(APIView):
             user.email = data['email']
             user.username = data['login']
             user.set_password(data['mdp'])
+            user.is_active = True
             user.save()
             user.groups.add(Group.objects.filter(name="Administrateur").first().id)
             user.save()
@@ -111,6 +116,7 @@ class AdministrateurApiDetails(APIView):
                 user.last_name = data['nom']
                 user.email = data['email']
                 user.username = data['login']
+                user.is_active = data['is_active']
                 if data['mdp'] is not None:
                     user.set_password(data['mdp'])
                 user.groups.add(Group.objects.filter(name="Administrateur").first().id)
@@ -133,4 +139,9 @@ class AdministrateurApiDetails(APIView):
             admin.delete()
             return Response({"status":"done"},status=status.HTTP_200_OK)
         return Response({"status":"none"},status=status.HTTP_204_NO_CONTENT)
+
+class UserrechercheApi(APIView):
+    def post(self,request):
+        data = request.data
+        
 

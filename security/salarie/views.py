@@ -31,6 +31,11 @@ class SalarieApi(APIView):
 
 
     def get(self,request):
+
+        if(request.GET.get("paginated",None) is not None):
+            salarie = Salarie.objects.all()
+            serializer = SalarieSerializer(salarie,many=True)
+            return Response(serializer.data,status=status.HTTP_200_OK)
         """page = self.paginate_queryset(self.queryset)
         if page is not None:
             serializer = self.serializer_class(page, many=True)
@@ -53,6 +58,7 @@ class SalarieApi(APIView):
             user.last_name = data['nom']
             user.email = data['email']
             user.username = data['login']
+            user.is_active = True
             user.set_password(data['mdp'])
             user.save()
             user.groups.add(Group.objects.filter(name="Salarie").first().id)
@@ -115,6 +121,7 @@ class SalarieApiDetails(APIView):
                 user.first_name = data['prenom']
                 user.last_name = data['nom']
                 user.email = data['email']
+                user.is_active = data['is_active']
                 user.username = data['login']
                 if data['mdp'] is not None:
                     user.set_password(data['mdp'])

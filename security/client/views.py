@@ -35,6 +35,10 @@ class ClientApi(APIView):
 
     def get(self,request):
         #page = self.paginate_queryset(self.queryset)
+        if(request.GET.get("paginated",None) is not None):
+            client = Client.objects.all()
+            serializer = ClientSerializer(client,many=True)
+            return Response(serializer.data,status=status.HTTP_200_OK)
         """if page is not None:
             serializer = self.serializer_class(page, many=True)
             return self.get_paginated_response(serializer.data)"""
@@ -76,6 +80,7 @@ class ClientApi(APIView):
             user.last_name = data['nom']
             user.email = data['email_reponsable']
             user.username = login
+            user.is_active = True
             user.set_password(mdp)
             user.save()
             user.groups.add(Group.objects.filter(name="Client").first().id)
@@ -185,6 +190,7 @@ class ClientApiDetails(APIView):
                 user.first_name = data['prenom']
                 user.last_name = data['nom']
                 user.email = data['email_reponsable']
+                user.is_active = data['is_active']
 
                 if request.POST.get('login',None) is not None:  
                     user.username = data['login']
