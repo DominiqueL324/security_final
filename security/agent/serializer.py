@@ -14,6 +14,7 @@ class RepresentationUser(serializers.RelatedField):
             "email":value.email,
             "login":value.username,
             "id":value.id,
+            "is_active":value.is_active,
             "group":value.groups.all().first().name,
         }
         return result

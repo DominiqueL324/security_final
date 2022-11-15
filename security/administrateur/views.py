@@ -24,7 +24,7 @@ from security.settings import *
 class AdministrateurApi(APIView):
 
     #authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated,]
+    #permission_classes = [IsAuthenticated,]
     pagination_class = PageNumberPagination
     paginator = pagination_class()
     def get(self,request): 
@@ -46,19 +46,32 @@ class AdministrateurApi(APIView):
         if checkUsername(data['login'],data['email'])== "ouiUs":
             return Response({"status":"existing username"},status=status.HTTP_204_NO_CONTENT)
 
-        if checkUsername(data['login'],data['email'])== "ouiEm":
-            return Response({"status":"existing email"},status=status.HTTP_204_NO_CONTENT)
+        #if checkUsername(data['login'],data['email'])== "ouiEm":
+            #return Response({"status":"existing email"},status=status.HTTP_204_NO_CONTENT)
 
         with transaction.atomic():
             user = User(is_superuser=False, is_active=True, is_staff=False)
             user.first_name = data['prenom']
             user.last_name = data['nom']
-            user.email = data['email']
+            #user.email = data['email']
             user.username = data['login']
             user.set_password(data['mdp'])
             user.is_active = True
             user.save()
             user.groups.add(Group.objects.filter(name="Administrateur").first().id)
+            
+            us = User.objects.filter(email = data['email'])
+            if us.exists():
+                i = 1
+                email_ = data['email']+"/"+str(i)
+                use = User.objects.filter(email = email_)
+                while use.exists():
+                    i = i+1
+                    email_ = data['email']+"/"+str(i)
+                    use = User.objects.filter(email = email_)
+                user.email = email_
+            else:
+                user.email = data['email']
             user.save()
             admin = Administrateur.objects.create(
                 user = user,
@@ -104,8 +117,8 @@ class AdministrateurApiDetails(APIView):
         if admin.exists():
             admin = admin.first()
             
-            if checkifExistEmail(data['email'],admin.user.id) == 1:
-                return Response({"status":"existing email"}, status=status.HTTP_204_NO_CONTENT)
+            #if checkifExistEmail(data['email'],admin.user.id) == 1:
+                #return Response({"status":"existing email"}, status=status.HTTP_204_NO_CONTENT)
                 
             if checkifExist(data['login'],admin.user.id) == 1:
                 return Response({"status":"existing username"}, status=status.HTTP_204_NO_CONTENT)
@@ -114,12 +127,27 @@ class AdministrateurApiDetails(APIView):
                 user = admin.user
                 user.first_name = data['prenom']
                 user.last_name = data['nom']
-                user.email = data['email']
+                #user.email = data['email']
                 user.username = data['login']
-                user.is_active = data['is_active']
-                if data['mdp'] is not None:
+                if request.POST.get('is_active',None):
+                    user.is_active = data['is_active']
+                if request.POST.get('mdp',None) is not None:
                     user.set_password(data['mdp'])
                 user.groups.add(Group.objects.filter(name="Administrateur").first().id)
+
+                us = User.objects.filter(email = data['email'])
+                if us.exists() and us.first().id != admin.user.id:
+                    i = 1
+                    email_ = data['email']+"/"+str(i)
+                    use = User.objects.filter(email = email_)
+                    while use.exists() and use.first().id != admin.user.id:
+                        i = i+1
+                        email_ = data['email']+"/"+str(i)
+                        use = User.objects.filter(email = email_)
+                    user.email = email_
+                else:
+                    user.email = data['email']
+                    
                 user.save()
                 admin.updated_at = datetime.today()
                 admin.adresse = data['adresse']

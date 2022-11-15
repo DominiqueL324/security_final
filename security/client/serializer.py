@@ -32,13 +32,6 @@ class RepresentationServiceGestion(serializers.RelatedField):
 class RepresentationConcession(serializers.RelatedField):
     def to_representation(self, value):
         result = {
-            "agent_rattache":{
-                "nom":value.agent_rattache.user.last_name,
-                "prenom": value.agent_rattache.user.first_name,
-                "email":value.agent_rattache.user.email,
-                "trigramme":value.agent_rattache.trigramme,
-                "id":value.agent_rattache.id,
-            },
             "agence_secteur_rattachement":value.agence_secteur_rattachement,
             "nom_concessionnaire":value.nom_concessionnaire,
             "numero_proposition_prestation":value.numero_proposition_prestation,
@@ -48,6 +41,20 @@ class RepresentationConcession(serializers.RelatedField):
             "suivie_technique_client":value.suivie_technique_client,
             
         }
+        if value.agent_rattache is not None:
+            result['agent_rattache'] = {
+                "nom":value.agent_rattache.user.last_name,
+                "prenom": value.agent_rattache.user.first_name,
+                "email":value.agent_rattache.user.email,
+                "trigramme":value.agent_rattache.trigramme,
+                "id":value.agent_rattache.id,
+                "user": value.agent_rattache.user.id,
+                "secteur": value.agent_rattache.secteur_primaire,
+                "secteur_secondaire": value.agent_rattache.secteur_secondaire
+            }
+        else:
+            result['agent_rattache'] = None
+        
         return result
 
 class RepresentationUser(serializers.RelatedField):
@@ -59,8 +66,10 @@ class RepresentationUser(serializers.RelatedField):
             "login":value.username,
             "id":value.id,
             "group":value.groups.all().first().name,
+            "is_active":value.is_active
         }
         return result
+        
 
 class ClientSerializer(serializers.ModelSerializer):
     user = RepresentationUser(read_only=True,many=False)
