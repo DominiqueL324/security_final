@@ -24,6 +24,7 @@ from django.db.models import Q
 from manager.serializer import UserSerializer
 from agent.models import Agent
 from client.models import Client, Concession
+from salarie.models import Salarie
 # Create your views here.
 
 class FiltreAPI(APIView):
@@ -63,6 +64,10 @@ class FiltreAPI(APIView):
             for c in cp:
                 cl = Client.objects.filter(info_concession=c).first()
                 if cl is not None:
+                    sal = Salarie.objects.filter(client=cl)
+                    if sal.exists():
+                        for sl in sal:
+                            final_ = final_ | User.objects.filter(pk=sl.user.id)
                     final_ = final_ | User.objects.filter(pk=cl.user.id)
             for a in ag:
                 final_ = final_ | User.objects.filter(pk=a.user.id)

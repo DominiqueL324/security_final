@@ -85,15 +85,17 @@ class RoleManager(APIView):
                 cn = Concession.objects.filter(agent_rattache=boy.first().id)
                 agent = Agent.objects.filter(agent_secteur=boy.first().id).count()
                 i=0
+                k=0
                 for c in cn:
                     if Client.objects.filter(info_concession=c).first() is not None:
                         i = i+1
-                salarie = Salarie.objects.filter(agent_rattache=boy.first().id).count()
+                        k = k +  Salarie.objects.filter(client=Client.objects.filter(info_concession=c).first().id).count()
+                #salarie = Salarie.objects.filter(agent_rattache=boy.first().id).count()
 
                 final_ = {
                     "client":i,
                     "agent":agent,
-                    "salarie":salarie
+                    "salarie":k
                 }
                 data = serializer.data
                 data[0]["stats"] = final_
