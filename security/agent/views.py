@@ -31,22 +31,53 @@ class AgentApi(APIView):
     
     def get(self,request):
 
+        #Cas Affection AC et AS et filtres pour AS
         if request.GET.get('agent',None) is not None:
+            final_ = Agent.objects.none()
             ag = int(request.GET.get('agent',None))
+            
             agent = Agent.objects.filter(agent_secteur=ag)
-        
+            #cas Audit planneur on, recupère tous les AC de la Zone mais Pas l'AS
+            if request.GET.get('add_secteur',None) is not None:
+                pass
+            else:
+                final_ = final_ | Agent.objects.filter(pk=ag)
+
+            for a in agent:
+                user = User.objects.filter(pk=a.user.id).first()
+                if user.groups.filter(name="Agent secteur").exists():
+                    pass
+                else:
+                    final_ = final_ | Agent.objects.filter(pk=a.id)
+            #Cas affectaion AS on recupère ses AS et tous les planneurs
+            if request.GET.get('planneur',None) is not None:
+                agents = Agent.objects.all().order_by("-id")
+                for ag in agents:
+                    us = User.objects.filter(pk=ag.user.id).first()
+                    if us.groups.filter(name="Audit planneur").exists() and not us.groups.filter(name="Agent secteur").exists():
+                        if us.groups.filter(name="Agent constat").exists():
+                            pass
+                        else:
+                            final_ = final_ | Agent.objects.filter(pk=ag.id)
+
             if(request.GET.get("paginated",None) is not None):
-                agents = self.paginator.paginate_queryset(agent,request,view=self)
+                agents = self.paginator.paginate_queryset(final_,request,view=self)
                 serializer = AgentSerializer(agents,many=True)
                 return self.paginator.get_paginated_response(serializer.data)
-            serializer = AgentSerializer(agent,many=True)
+            serializer = AgentSerializer(final_,many=True)
             return Response(serializer.data,status= status.HTTP_200_OK) 
 
+        #Cas Admin
         agent = Agent.objects.all()
         final_ = Agent.objects.none()
-        for ag in agent:
-            if ag.user.groups.filter(name="Agent secteur").exists() or ag.user.groups.filter(name="Agent constat").exists() or ag.user.groups.filter(name="Audit planneur").exists():
-                final_ = final_ | Agent.objects.filter(pk=ag.id)
+        if (request.GET.get("for_rdv",None) is not None):
+            for ag in agent:
+                if ag.user.groups.filter(name="Agent secteur").exists():
+                    final_ = final_ | Agent.objects.filter(pk=ag.id)
+        else:
+            for ag in agent:
+                if ag.user.groups.filter(name="Agent secteur").exists() or ag.user.groups.filter(name="Agent constat").exists() or ag.user.groups.filter(name="Audit planneur").exists():
+                    final_ = final_ | Agent.objects.filter(pk=ag.id)
 
         if(request.GET.get("paginated",None) is not None):
             serializer = AgentSerializer(final_,many=True)
@@ -178,7 +209,6 @@ class AgentApiDetails(APIView):
                     user.is_active = data['is_active']
                 if request.POST.get('mdp',None) is not None:
                     user.set_password(data['mdp'])
-<<<<<<< HEAD
                 
                 user.groups.remove(Group.objects.filter(name="Agent secteur").first().id)
                 user.groups.remove(Group.objects.filter(name="Agent constat").first().id)
@@ -187,11 +217,6 @@ class AgentApiDetails(APIView):
                 if int(data['role']) == 1:
                     user.groups.add(Group.objects.filter(name="Agent secteur").first().id)
                     admin.agent_secteur=None
-=======
-
-                if int(data['role']) == 1:
-                    user.groups.add(Group.objects.filter(name="Agent secteur").first().id)
->>>>>>> 00dddfd2bc586d0f596ac76e93b0147e04c8afd7
                 elif int(data['role']) == 2:
                     user.groups.add(Group.objects.filter(name="Agent constat").first().id)
                 else:
