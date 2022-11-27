@@ -124,12 +124,7 @@ class ImportApi(APIView):
                     updated_at = updated_at
                 )
             if int(data_["cible"]) == 3:
-                    #return JsonResponse({"user":user.first_name})
-                ag = Agent.objects.all()
-                for a in ag:
-                    if not a.user.groups.filter(name="Agent secteur").exists() and not a.user.groups.filter(name="Agent constat").exists() and not a.user.groups.filter(name="Audit planneur").exists():
-                        a.user.groups.add(Group.objects.filter(name="Audit planneur").first().id)
-                        a.user.save()                     
+
                 """if int(liste[1]) == 10:
                     user = User.objects.filter(pk=int(liste[0])).first()
                     user.groups.add(Group.objects.filter(name="Agent secteur").first().id)
@@ -143,7 +138,24 @@ class ImportApi(APIView):
                     user = User.objects.filter(pk=int(liste[0])).first()
                     user.groups.add(Group.objects.filter(name="Audit planneur").first().id)
                     user.save()
-                    #if not user.groups.filter(name="Agent secteur").exists():"""
+                    #return JsonResponse({"user":user.first_name})"""
+                #specification des rôles Agent
+                #ag = Agent.objects.all()
+                us = User.objects.filter(pk=int(liste[0])).first()
+                if  us.groups.filter(name="Agent secteur").exists() :
+                    us.groups.clear()
+                    us.groups.add(Group.objects.filter(name="Agent secteur").first().id)
+                    us.save() 
+
+                if  us.groups.filter(name="Agent constat").exists():                  
+                    us.groups.clear() 
+                    us.groups.add(Group.objects.filter(name="Agent constat").first().id)
+                    us.save()
+
+                if  not us.groups.filter(name="Agent constat").exists() and not us.groups.filter(name="Agent secteur").exists():                  
+                    us.groups.clear()
+                    us.groups.add(Group.objects.filter(name="Audit planneur").first().id)
+                    us.save()
                         
                 
             if int(data_['cible']) == 4:
@@ -174,11 +186,8 @@ class ImportApi(APIView):
                     origine_client = liste[34],
                     suivie_technique_client = liste[35]
                 )
-                if liste[32] is not None:
-                    user_ = User.objects.filter(pk=int(liste[32])).first()
-                    concession.agent_rattache = Agent.objects.filter(user=user_).first()
-                
-                else:
+                if liste[32] is  None:
+
                     us = Agent.objects.filter(trigramme="Jonh Doe Max")
                     if not us.exists():
                         user_ = User()
@@ -191,13 +200,21 @@ class ImportApi(APIView):
                         user_.date_joined = datetime(2000, 5, 17,12,12)
                         user_.is_staff = True
                         user_.save()
+                        user_.groups.add(Group.objects.filter(name="Agent secteur").first().id)
+                        user_.save()
                         agent = Agent.objects.create(
                             user = user_,
                             trigramme = "Jonh Doe Max",
                             created_at = datetime(2000, 5, 17,12,12),
                             updated_at = datetime(2000, 5, 17,12,12)
                         )
-                    concession.agent_rattache = Agent.objects.filter(trigramme="Jonh Doe Max").first()
+                    concession.agent_rattache = Agent.objects.filter(trigramme="Jonh Doe Max").first()                
+                else:
+                    user_ = User.objects.filter(pk=int(liste[32])).first()
+                    if user_.groups.filter(name="Agent secteur").exists():
+                        concession.agent_rattache = Agent.objects.filter(user=user_).first()
+                    else:
+                        concession.agent_rattache = Agent.objects.filter(trigramme="Jonh Doe Max").first() 
                 concession.save()
 
 

@@ -43,15 +43,36 @@ class ClientApi(APIView):
         if(request.GET.get("token",None) is not None):
             odj_token = AccessToken(request.GET.get('token'))
             user = User.objects.filter(pk=int(odj_token['user_id'])).first()
-            
-            ag = Agent.objects.filter(user=user).first()
-            ifc = Concession.objects.filter(agent_rattache=ag)
             final_ = Client.objects.none()
-            for ik in ifc:
-                cl = Client.objects.filter(info_concession=ik).first()
-                if cl is not None:
-                    if cl.user.groups.filter(name="Client pro").exists() or cl.user.groups.filter(name="Client particulier").exists():
-                        final_ = final_ | Client.objects.filter(pk=cl.id)
+
+            #recupération clients pour un AS
+            if user.groups.filter(name="Agent secteur").exists():
+                ag = Agent.objects.filter(user=user).first()
+                ifc = Concession.objects.filter(agent_rattache=ag)
+                for ik in ifc:
+                    cl = Client.objects.filter(info_concession=ik).first()
+                    if cl is not None:
+                        if cl.user.groups.filter(name="Client pro").exists() or cl.user.groups.filter(name="Client particulier").exists():
+                            final_ = final_ | Client.objects.filter(pk=cl.id)
+
+            #recupération clients pour un agent de constat                
+            if user.groups.filter(name="Agent constat").exists() and not user.groups.filter(name="Agent secteur").exists():
+                ag = Agent.objects.filter(user=user).first()
+                if ag is not None:
+                    if Agent.objects.filter(pk=ag.agent_secteur).first() is not None:
+                        ifc = Concession.objects.filter(agent_rattache=Agent.objects.filter(pk=ag.agent_secteur).first())
+                        for ik in ifc:
+                            cl = Client.objects.filter(info_concession=ik).first()
+                            if cl is not None:
+                                if cl.user.groups.filter(name="Client pro").exists() or cl.user.groups.filter(name="Client particulier").exists():
+                                    final_ = final_ | Client.objects.filter(pk=cl.id)
+            
+
+            #recupération clients pour un audit planneur                
+            if user.groups.filter(name="Audit planneur").exists() and not user.groups.filter(name="Agent secteur").exists() and not user.groups.filter(name="Agent constat").exists():
+                pass
+                #il peut prendre un RDV pour tous les clients donc il estr comme un admin
+
                     
             if (request.GET.get("paginated",None) is not None):
                 client = self.paginator.paginate_queryset(final_,request,view=self)

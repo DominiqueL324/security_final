@@ -18,8 +18,28 @@ class RepresentationUser(serializers.RelatedField):
             "group":value.groups.all().first().name,
         }
         return result
+
+class RepresentationAs(serializers.RelatedField):
+    def to_representation(self, value):
+        age = Agent.objects.filter(pk=int(value)).first()
+        result = {}
+        if age is not None:
+            result = {
+                "nom":age.user.last_name,
+                "prenom": age.user.first_name,
+                "email":age.user.email,
+                "id_user":age.user.id,
+                "id":age.id,
+            }
+        else:
+            result={
+                "agent_id":value
+            }
+        return result
+
 class AgentSerializer(serializers.ModelSerializer):
     user = RepresentationUser(read_only=True,many=False)
+    agent_secteur = RepresentationAs(read_only=True,many=False)
     class Meta:
         model= Agent
         fields = '__all__'

@@ -1,5 +1,7 @@
 from django.shortcuts import render
 from .models import Agent
+from administrateur.models import Administrateur
+from administrateur.serializer import AdministrateurSerializer
 from .serializer import AgentSerializer
 from rest_framework.views import APIView
 from rest_framework.authentication import  TokenAuthentication
@@ -38,10 +40,10 @@ class AgentApi(APIView):
             
             agent = Agent.objects.filter(agent_secteur=ag)
             #cas Audit planneur on, recupère tous les AC de la Zone mais Pas l'AS
-            if request.GET.get('add_secteur',None) is not None:
-                pass
-            else:
-                final_ = final_ | Agent.objects.filter(pk=ag)
+            #if request.GET.get('add_secteur',None) is not None:
+                #pass
+            #else:
+            final_ = final_ | Agent.objects.filter(pk=ag)
 
             for a in agent:
                 user = User.objects.filter(pk=a.user.id).first()
@@ -49,15 +51,13 @@ class AgentApi(APIView):
                     pass
                 else:
                     final_ = final_ | Agent.objects.filter(pk=a.id)
+
             #Cas affectaion AS on recupère ses AS et tous les planneurs
             if request.GET.get('planneur',None) is not None:
                 agents = Agent.objects.all().order_by("-id")
                 for ag in agents:
                     us = User.objects.filter(pk=ag.user.id).first()
-                    if us.groups.filter(name="Audit planneur").exists() and not us.groups.filter(name="Agent secteur").exists():
-                        if us.groups.filter(name="Agent constat").exists():
-                            pass
-                        else:
+                    if us.groups.filter(name="Agent constat").exists():
                             final_ = final_ | Agent.objects.filter(pk=ag.id)
 
             if(request.GET.get("paginated",None) is not None):
@@ -123,7 +123,7 @@ class AgentApi(APIView):
             if int(data['role']) == 1:
                 user.groups.add(Group.objects.filter(name="Agent secteur").first().id)
             elif int(data['role'])== 2:
-                user.groups.add(Group.objects.filter(name="Agent constat").first().id)
+                user.groups.add(Group.objects.filter(name="Agent constat").first().id)                
             else:
                 user.groups.add(Group.objects.filter(name="Audit planneur").first().id)
 
@@ -189,6 +189,7 @@ class AgentApiDetails(APIView):
 
     def put(self,request,id):
         data = request.data
+        admin_=False
         admin = Agent.objects.filter(pk=id)
         if admin.exists():
             admin = admin.first()
@@ -209,16 +210,19 @@ class AgentApiDetails(APIView):
                     user.is_active = data['is_active']
                 if request.POST.get('mdp',None) is not None:
                     user.set_password(data['mdp'])
-                
-                user.groups.remove(Group.objects.filter(name="Agent secteur").first().id)
-                user.groups.remove(Group.objects.filter(name="Agent constat").first().id)
-                user.groups.remove(Group.objects.filter(name="Audit planneur").first().id)
 
                 if int(data['role']) == 1:
+                    user.groups.clear()
                     user.groups.add(Group.objects.filter(name="Agent secteur").first().id)
                     admin.agent_secteur=None
                 elif int(data['role']) == 2:
+                    user.groups.clear()
                     user.groups.add(Group.objects.filter(name="Agent constat").first().id)
+                elif int(data['role'])== 4:
+                    user.groups.clear()
+                    admin_ = True
+                elif int(data['role'])== 0:
+                    pass
                 else:
                     user.groups.add(Group.objects.filter(name="Audit planneur").first().id)
                     #.views.py.swp"
@@ -237,25 +241,39 @@ class AgentApiDetails(APIView):
                     user.email = data['email']
 
                 user.save()
-                admin.updated_at = datetime.today()
-                admin.trigramme = data['trigramme']
-                admin.adresse = data['adresse']
-                admin.telephone = data['telephone']
-                admin.save()
-
-                if request.POST.get('secteur_primaire',None):
-                    admin.secteur_primaire = data["secteur_primaire"]
-
-                if request.POST.get('secteur_secondaire',None):
-                    admin.secteur_secondaire = data["secteur_secondaire"]
+                if admin_ == True:
+                    user.groups.add(Group.objects.filter(name="Administrateur").first().id)
+                    user.save()
+                    Administrateur.objects.create(
+                        user = user,
+                        adresse = data['adresse'],
+                        telephone = data['telephone'],  
+                    )
+                    admin.delete()
+                    admin = Administrateur.objects.filter(pk=id)
+                    serializer= AdministrateurSerializer(admin,many=True)
+                    return Response(serializer.data,status=status.HTTP_200_OK)
+                else:
+                    admin.updated_at = datetime.today()
+                    admin.trigramme = data['trigramme']
+                    admin.adresse = data['adresse']
+                    admin.telephone = data['telephone']
+                    admin.save()
                 
-                if request.POST.get('agent_secteur',None):
-                    admin.agent_secteur = data["agent_secteur"]
-                admin.save()
 
-                admin = Agent.objects.filter(pk=id)
-                serializer= AgentSerializer(admin,many=True)
-                return Response(serializer.data,status=status.HTTP_200_OK)
+                    if request.POST.get('secteur_primaire',None):
+                        admin.secteur_primaire = data["secteur_primaire"]
+
+                    if request.POST.get('secteur_secondaire',None):
+                        admin.secteur_secondaire = data["secteur_secondaire"]
+                    
+                    if request.POST.get('agent_secteur',None):
+                        admin.agent_secteur = data["agent_secteur"]
+                    admin.save()
+
+                    admin = Agent.objects.filter(pk=id)
+                    serializer= AgentSerializer(admin,many=True)
+                    return Response(serializer.data,status=status.HTTP_200_OK)
         return Response({"status":"none"},status=status.HTTP_204_NO_CONTENT)
 
     def delete(self,request,id):
